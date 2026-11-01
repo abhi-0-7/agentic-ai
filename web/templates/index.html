@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Parking Autonomous Agent Command Center</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --card-border: #1f2937;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --accent-blue: #38bdf8;
+      --accent-green: #34d399;
+      --accent-red: #f87171;
+      --accent-yellow: #fbbf24;
+      --accent-purple: #a855f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); padding: 18px; line-height: 1.5; }
+
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #111827; padding: 16px 20px; border-radius: 10px; border: 1px solid var(--card-border);
+      margin-bottom: 16px;
+    }
+    header h1 { font-size: 1.35rem; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+    .live-indicator { display: inline-block; width: 8px; height: 8px; background: var(--accent-green); border-radius: 50%; box-shadow: 0 0 8px var(--accent-green); }
+
+    /* Controls Bar */
+    .controls-bar {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
+      background: var(--card-bg); padding: 14px 18px; border-radius: 8px;
+      border: 1px solid var(--card-border); align-items: center;
+    }
+    .btn {
+      padding: 9px 15px; border-radius: 6px; font-weight: 600; font-size: 0.85rem;
+      border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+      transition: all 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.15); }
+    .btn-red { background: #dc2626; color: white; }
+    .btn-yellow { background: #d97706; color: white; }
+    .btn-green { background: #059669; color: white; }
+    .btn-reset { background: #374151; color: white; }
+
+    /* Top Stats */
+    .top-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .stat-card { background: var(--card-bg); padding: 14px; border-radius: 8px; border: 1px solid var(--card-border); }
+    .stat-card .label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600; }
+    .stat-card .value { font-size: 1.6rem; font-weight: 700; margin-top: 2px; }
+
+    /* Main Split Layout: Lots on Left, Live Agent Brain on Right */
+    .main-grid {
+      display: grid; grid-template-columns: 1fr 420px; gap: 16px;
+    }
+    @media (max-width: 1100px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* Left: Lots Grid */
+    .lots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+    .lot-card {
+      background: var(--card-bg); padding: 14px; border-radius: 8px;
+      border: 1px solid var(--card-border); transition: all 0.2s;
+    }
+    .lot-card.critical { border-color: var(--accent-red); box-shadow: 0 0 12px rgba(239,68,68,0.3); }
+    .lot-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .lot-name { font-weight: 700; font-size: 0.95rem; }
+    .lot-zone { font-size: 0.75rem; color: var(--text-muted); }
+    
+    .progress-bar-bg { width: 100%; height: 8px; background: #374151; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+    .progress-bar-fill { height: 100%; transition: width 0.3s ease; }
+    .fill-green { background: var(--accent-green); }
+    .fill-yellow { background: var(--accent-yellow); }
+    .fill-red { background: var(--accent-red); }
+
+    .reroute-badge {
+      display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem;
+      padding: 3px 8px; border-radius: 12px; background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-weight: 600;
+    }
+
+    /* Right: Live Agent Brain */
+    .brain-panel {
+      background: var(--card-bg); border-radius: 8px; border: 1px solid var(--card-border);
+      padding: 16px; display: flex; flex-direction: column; height: 100%;
+    }
+    .brain-header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 12px; border-bottom: 1px solid var(--card-border); margin-bottom: 12px;
+    }
+    .agent-badges {
+      display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .agent-pill {
+      font-size: 0.75rem; font-weight: 600; padding: 4px 10px; border-radius: 12px;
+      display: inline-flex; align-items: center; gap: 5px; background: #1f2937; border: 1px solid #374151;
+    }
+
+    .feed-container {
+      flex: 1; max-height: 520px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+      padding-right: 4px;
+    }
+    .feed-item {
+      display: flex; gap: 10px; padding: 10px 12px; background: #1f2937; border-radius: 6px;
+      font-size: 0.85rem; border-left: 3px solid #6b7280; animation: fadeIn 0.3s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: translateY(0); } }
+    .feed-avatar { width: 28px; height: 28px; border-radius: 4px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 0.85rem; }
+    .feed-content { flex: 1; }
+    .feed-meta { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 2px; }
+
+    /* Bottom: Quarantined Sensors & Grafana status */
+    .bottom-section {
+      margin-top: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    }
+    @media (max-width: 900px) {
+      .bottom-section { grid-template-columns: 1fr; }
+    }
+    .info-card { background: var(--card-bg); padding: 16px; border-radius: 8px; border: 1px solid var(--card-border); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 8px; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--card-border); }
+    th { color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 0.75rem; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div>
+      <h1><i class="fa-solid fa-brain" style="color:var(--accent-blue);"></i> Smart Parking Autonomous Agent Command Center</h1>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 2px;">
+        Bengaluru Smart Mobility • Real-Time Stream Ingestion & Multi-Agent Corridor Rebalancing
+      </p>
+    </div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <a href="http://localhost:3001" target="_blank" style="text-decoration:none; font-size: 0.8rem; background: #1e3a8a; color: #93c5fd; padding: 6px 12px; border-radius: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Grafana (Port 3001)
+      </a>
+      <span><span class="live-indicator"></span> <strong>STREAM LIVE</strong></span>
+    </div>
+  </header>
+
+  <!-- Interactive Controls Bar -->
+  <div class="controls-bar">
+    <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-right: 6px;">
+      <i class="fa-solid fa-bolt"></i> Agent Triggers:
+    </span>
+    <button class="btn btn-red" id="btn-jam" onclick="triggerCongestion()">
+      <i class="fa-solid fa-car-burst"></i> Simulate Rush Hour Jam (MG Road 95%)
+    </button>
+    <button class="btn btn-yellow" id="btn-dlq" onclick="triggerDlqFault()">
+      <i class="fa-solid fa-triangle-exclamation"></i> Simulate Sensor Hardware Failure
+    </button>
+    <button class="btn btn-green" id="btn-refl" onclick="triggerReflection()">
+      <i class="fa-solid fa-rotate-left"></i> Run Reflection Loop (+1.0)
+    </button>
+    <button class="btn btn-reset" onclick="triggerReset()">
+      <i class="fa-solid fa-arrows-rotate"></i> Reset Equilibrium
+    </button>
+    <span style="margin-left: auto; font-size: 0.8rem; color: var(--text-muted);" id="last-updated">Updating...</span>
+  </div>
+
+  <!-- Top Metrics -->
+  <div class="top-stats">
+    <div class="stat-card">
+      <div class="label">Total City Capacity</div>
+      <div class="value">1,000 Bays</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Currently Occupied</div>
+      <div class="value" id="city-occupied" style="color: var(--accent-blue);">--</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Overall Occupancy</div>
+      <div class="value" id="city-occupancy-pct" style="color: var(--accent-green);">--%</div>
+    </div>
+    <div class="stat-card">
+      <div class="label">Quarantined Sensors</div>
+      <div class="value" id="city-quarantines" style="color: var(--accent-red);">0</div>
+    </div>
+  </div>
+
+  <!-- Main Split Layout -->
+  <div class="main-grid">
+
+    <!-- Left Column: 8 Bengaluru Parking Lots -->
+    <div>
+      <div style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+        <span><i class="fa-solid fa-square-parking" style="color:var(--accent-blue)"></i> Bengaluru Parking Corridors (Live InfluxDB)</span>
+        <span style="font-size: 0.75rem; color: var(--text-muted);">Syncing to Grafana port 3001</span>
+      </div>
+      <div class="lots-grid" id="lots-container">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+    <!-- Right Column: Live Autonomous Multi-Agent Brain -->
+    <div class="brain-panel">
+      <div class="brain-header">
+        <div style="font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 8px;">
+          <i class="fa-solid fa-network-wired" style="color: var(--accent-purple);"></i>
+          <span>Multi-Agent Brain & Thought Stream</span>
+        </div>
+        <span style="font-size: 0.75rem; background: rgba(168,85,247,0.15); color: #c084fc; padding: 2px 8px; border-radius: 10px; font-weight: 600;">
+          4 Active Agents
+        </span>
+      </div>
+
+      <!-- Agent Badges -->
+      <div class="agent-badges">
+        <span class="agent-pill" style="border-color: #818cf8; color: #818cf8;"><i class="fa-solid fa-user-tie"></i> Coordinator</span>
+        <span class="agent-pill" style="border-color: #38bdf8; color: #38bdf8;"><i class="fa-solid fa-route"></i> Traffic Worker</span>
+        <span class="agent-pill" style="border-color: #a855f7; color: #a855f7;"><i class="fa-solid fa-map-location-dot"></i> Allocation Worker</span>
+        <span class="agent-pill" style="border-color: #f87171; color: #f87171;"><i class="fa-solid fa-screwdriver-wrench"></i> Diagnostic Worker</span>
+      </div>
+
+      <!-- Live Dialogue Stream -->
+      <div class="feed-container" id="agent-feed-container">
+        <!-- Injected by JS -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Section: Quarantined Sensors + Grafana Real-Time Sync Guide -->
+  <div class="bottom-section">
+    <!-- Quarantined Sensors Table -->
+    <div class="info-card">
+      <div style="font-weight: 700; font-size: 0.95rem;"><i class="fa-solid fa-shield-virus" style="color:var(--accent-red)"></i> Hardware Fault Registry (Kafka Dead Letter Queue)</div>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+        Corrupted IoT sensors are quarantined by the Diagnostic Worker so stream processing is never contaminated.
+      </p>
+      <table>
+        <thead>
+          <tr>
+            <th>Slot ID</th>
+            <th>Facility</th>
+            <th>Diagnosed Fault</th>
+            <th>BBMP Work Order</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="quarantine-table-body">
+          <!-- Injected by JS -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Grafana Real-Time Verification Card -->
+    <div class="info-card">
+      <div style="font-weight: 700; font-size: 0.95rem;"><i class="fa-solid fa-chart-simple" style="color:var(--accent-green)"></i> Real-Time Grafana Telemetry Verification</div>
+      <p style="font-size: 0.8rem; color: #d1d5db; margin: 6px 0;">
+        Every button clicked here writes line-protocol records directly to <strong>InfluxDB (port 8086)</strong>.
+      </p>
+      <div style="font-size: 0.8rem; color: var(--text-muted); background: #1f2937; padding: 10px 14px; border-radius: 6px; line-height: 1.6;">
+        <div><strong>How to see side-by-side verification:</strong></div>
+        <div>1. Keep this page open on the right half of your monitor.</div>
+        <div>2. Open <a href="http://localhost:3001" target="_blank" style="color: #38bdf8; font-weight: 600;">http://localhost:3001</a> on the left half.</div>
+        <div>3. Click <strong>"Simulate Rush Hour Jam"</strong> above:</div>
+        <div style="margin-left: 12px; color: #e5e7eb;">• On this page: MG Road turns red at <strong>94.7%</strong> & the Agents propose a 30% reroute.</div>
+        <div style="margin-left: 12px; color: #e5e7eb;">• In Grafana: The <em>"Occupancy by Parking Lot"</em> bar for MG Road shoots to <strong>94.7%</strong>!</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    async function fetchState() {
+      try {
+        const res = await fetch('/api/state');
+        const data = await res.json();
+        renderDashboard(data);
+      } catch (err) {
+        console.error("Fetch state error:", err);
+      }
+    }
+
+    function renderDashboard(data) {
+      document.getElementById('city-occupied').innerText = data.total_occupied.toLocaleString() + ' Bays';
+      
+      const occEl = document.getElementById('city-occupancy-pct');
+      occEl.innerText = data.overall_occupancy_pct + '%';
+      if (data.overall_occupancy_pct > 85) occEl.style.color = '#f87171';
+      else if (data.overall_occupancy_pct > 75) occEl.style.color = '#fbbf24';
+      else occEl.style.color = '#34d399';
+
+      const qCount = Object.keys(data.quarantined_sensors || {}).length;
+      document.getElementById('city-quarantines').innerText = qCount;
+      document.getElementById('last-updated').innerText = 'Synced: ' + new Date().toLocaleTimeString();
+
+      // 1. Render Parking Lots
+      const container = document.getElementById('lots-container');
+      container.innerHTML = '';
+      data.lots.forEach(lot => {
+        let fillClass = 'fill-green';
+        if (lot.occupancy_pct > 85) fillClass = 'fill-red';
+        else if (lot.occupancy_pct > 75) fillClass = 'fill-yellow';
+
+        const isCrit = lot.occupancy_pct >= 90;
+
+        container.innerHTML += `
+          <div class="lot-card ${isCrit ? 'critical' : ''}">
+            <div class="lot-header">
+              <div>
+                <div class="lot-name">${lot.name}</div>
+                <div class="lot-zone">${lot.zone} • ${lot.lot_id}</div>
+              </div>
+              <div style="font-weight: 700; font-size: 1.15rem; color: ${lot.occupancy_pct > 85 ? '#f87171' : '#34d399'}">${lot.occupancy_pct}%</div>
+            </div>
+
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:var(--text-muted);">
+              <span>Occupied: <strong>${lot.occupied_slots}</strong> / ${lot.capacity}</span>
+              <span>Available: <strong>${lot.available_slots}</strong></span>
+            </div>
+
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill ${fillClass}" style="width: ${Math.min(100, lot.occupancy_pct)}%"></div>
+            </div>
+
+            <div style="margin-top: 6px;">
+              ${lot.reroute_target 
+                ? `<span class="reroute-badge"><i class="fa-solid fa-arrow-turn-down"></i> Diverting 30% to ${lot.reroute_target.replace('LOT_', '')}</span>` 
+                : `<span style="font-size:0.75rem; color:#6b7280;"><i class="fa-solid fa-check"></i> Corridor flow optimal</span>`
+              }
+            </div>
+          </div>
+        `;
+      });
+
+      // 2. Render Live Agent Dialogue Feed
+      const feedContainer = document.getElementById('agent-feed-container');
+      feedContainer.innerHTML = '';
+      (data.agent_feed || []).slice().reverse().forEach(item => {
+        feedContainer.innerHTML += `
+          <div class="feed-item" style="border-left-color: ${item.color || '#6b7280'};">
+            <div class="feed-avatar" style="background: rgba(255,255,255,0.1); color: ${item.color || '#ffffff'};">
+              <i class="fa-solid ${item.avatar || 'fa-robot'}"></i>
+            </div>
+            <div class="feed-content">
+              <div class="feed-meta">
+                <strong style="color: ${item.color || '#ffffff'}">${item.agent}</strong>
+                <span>${item.time}</span>
+              </div>
+              <div>${item.message}</div>
+            </div>
+          </div>
+        `;
+      });
+
+      // 3. Render Quarantined Sensors
+      const qBody = document.getElementById('quarantine-table-body');
+      qBody.innerHTML = '';
+      const qSensors = Object.entries(data.quarantined_sensors || {});
+      if (qSensors.length === 0) {
+        qBody.innerHTML = '<tr><td colspan="5" style="color:#6b7280; text-align:center;">No hardware faults detected. All sensors operational.</td></tr>';
+      } else {
+        qSensors.forEach(([slotId, info]) => {
+          qBody.innerHTML += `
+            <tr>
+              <td><strong>${slotId}</strong></td>
+              <td>${info.lot_id}</td>
+              <td style="color:#f87171;"><i class="fa-solid fa-triangle-exclamation"></i> ${info.fault_type}</td>
+              <td><code>${info.work_order_id}</code></td>
+              <td><span style="background:rgba(239,68,68,0.2); color:#f87171; padding:2px 8px; border-radius:10px; font-weight:700;">QUARANTINED</span></td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    async function triggerCongestion() {
+      const btn = document.getElementById('btn-jam');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Rebalancing Traffic...';
+      try {
+        await fetch('/api/trigger/congestion', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lot_id: 'LOT_MG_ROAD_01' }) });
+        await fetchState();
+      } finally {
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-car-burst"></i> Simulate Rush Hour Jam (MG Road 95%)'; }, 700);
+      }
+    }
+
+    async function triggerDlqFault() {
+      const btn = document.getElementById('btn-dlq');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Isolating Fault...';
+      try {
+        await fetch('/api/trigger/dlq_fault', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lot_id: 'LOT_HEBBAL_01' }) });
+        await fetchState();
+      } finally {
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Simulate Sensor Hardware Failure'; }, 700);
+      }
+    }
+
+    async function triggerReflection() {
+      const btn = document.getElementById('btn-refl');
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Evaluating Outcome...';
+      try {
+        await fetch('/api/trigger/reflection', { method: 'POST' });
+        await fetchState();
+      } finally {
+        setTimeout(() => { btn.innerHTML = '<i class="fa-solid fa-rotate-left"></i> Run Reflection Loop (+1.0)'; }, 700);
+      }
+    }
+
+    async function triggerReset() {
+      await fetch('/api/trigger/reset', { method: 'POST' });
+      await fetchState();
+    }
+
+    fetchState();
+    setInterval(fetchState, 2000);
+  </script>
+</body>
+</html>

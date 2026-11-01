@@ -275,7 +275,9 @@
           "custom": {
             "fillOpacity": 80
           },
-          "unit": "percent"
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         },
         "overrides": []
       },
@@ -287,19 +289,30 @@
       },
       "id": 6,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
         "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
         },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
         "tooltip": {
-          "mode": "single"
-        }
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "lot_id",
+        "xTickLabelRotation": 0
       },
       "title": "Occupancy by Parking Lot",
       "type": "barchart",
       "targets": [
         {
-          "query": "from(bucket: \"parking\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"parking_occupancy\" and r._field == \"occupancy_percentage\") |> last() |> group(columns: [\"lot_id\"])",
+          "query": "from(bucket: \"parking\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"parking_occupancy\" and r._field == \"occupancy_percentage\")\n  |> filter(fn: (r) => r.lot_id =~ /^LOT_/ and r.lot_id !~ /GHOST/ and r.lot_id !~ /MELBOURNE/ and r.lot_id != \"LOT_ECITY_01\")\n  |> group(columns: [\"lot_id\"])\n  |> sort(columns: [\"_time\"])\n  |> last()\n  |> group()\n  |> keep(columns: [\"lot_id\", \"_value\"])\n  |> sort(columns: [\"lot_id\"])",
           "refId": "A"
         }
       ]
@@ -314,7 +327,9 @@
           "custom": {
             "fillOpacity": 80
           },
-          "unit": "percent"
+          "unit": "percent",
+          "min": 0,
+          "max": 100
         },
         "overrides": []
       },
@@ -326,19 +341,30 @@
       },
       "id": 7,
       "options": {
+        "barRadius": 0,
+        "barWidth": 0.8,
+        "groupWidth": 0.7,
         "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
+          "calcs": [],
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
         },
+        "orientation": "auto",
+        "showValue": "auto",
+        "stacking": "none",
         "tooltip": {
-          "mode": "single"
-        }
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "zone_id",
+        "xTickLabelRotation": 0
       },
       "title": "Occupancy by Geographical Zone",
       "type": "barchart",
       "targets": [
         {
-          "query": "from(bucket: \"parking\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"parking_occupancy\" and r._field == \"occupancy_percentage\") |> group(columns: [\"zone_id\"]) |> mean()",
+          "query": "from(bucket: \"parking\")\n  |> range(start: -24h)\n  |> filter(fn: (r) => r._measurement == \"parking_occupancy\" and r._field == \"occupancy_percentage\")\n  |> filter(fn: (r) => r.zone_id =~ /^ZONE_(CENTRAL|EAST|SOUTH|NORTH)$/)\n  |> group(columns: [\"zone_id\"])\n  |> mean()\n  |> group()\n  |> keep(columns: [\"zone_id\", \"_value\"])\n  |> sort(columns: [\"zone_id\"])",
           "refId": "A"
         }
       ]
@@ -1031,6 +1057,143 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 59
+      },
+      "id": 500,
+      "panels": [],
+      "title": "Cognitive Agentic AI & Autonomous Operations (AI373TA)",
+      "type": "row"
+    },
+    {
+      "datasource": "InfluxDB",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 60
+      },
+      "id": 25,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true
+      },
+      "title": "Autonomous Agent Interventions Log (CWD Engine)",
+      "type": "table",
+      "targets": [
+        {
+          "query": "from(bucket: \"parking\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"agent_actions\") |> last()",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "InfluxDB",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 60
+      },
+      "id": 26,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "title": "Autonomous Traffic Diversion Rate (Traffic Worker)",
+      "type": "stat",
+      "targets": [
+        {
+          "query": "from(bucket: \"parking\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"agent_actions\" and r._field == \"divert_percentage\") |> last()",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "datasource": "InfluxDB",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 60
+      },
+      "id": 27,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "title": "Post-Action Reflection Score (Introspector Agent)",
+      "type": "stat",
+      "targets": [
+        {
+          "query": "from(bucket: \"parking\") |> range(start: -24h) |> filter(fn: (r) => r._measurement == \"agent_actions\" and r._field == \"reflection_score\") |> last()",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "10s",
@@ -1058,5 +1221,5 @@
   "timezone": "browser",
   "title": "Smart Parking Occupancy Analytics \u2014 Bengaluru",
   "uid": "smart-parking-overview",
-  "version": 1
+  "version": 10
 }

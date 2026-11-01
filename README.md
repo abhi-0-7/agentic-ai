@@ -1,320 +1,267 @@
-# Smart Parking Occupancy Analytics
-## End-to-End Real-Time Stream Processing and Analytics System
+# Smart Parking Cognitive Agentic Network (SMCAN)
+## Autonomous Multi-Agent Coordination & Real-Time Cyber-Physical Stream Intelligence
 
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.13-brightgreen.svg)](https://python.org)
-[![Spark: 3.5.1](https://img.shields.io/badge/Apache%20Spark-3.5.1%20Structured%20Streaming-orange.svg)](https://spark.apache.org)
-[![Kafka: 3.7/3.9](https://img.shields.io/badge/Apache%20Kafka-KRaft%20Mode-black.svg)](https://kafka.apache.org)
-[![InfluxDB: 2.7](https://img.shields.io/badge/InfluxDB-2.7%20Time--Series-purple.svg)](https://influxdata.com)
-[![Grafana: 10/11](https://img.shields.io/badge/Grafana-Live%20Telemetry%20Dashboard-yellow.svg)](https://grafana.com)
-[![Tests: 43/43 Passed](https://img.shields.io/badge/Tests-43%2F43%20Passed-success.svg)](https://github.com/abhi-0-7/spa-project)
+[![Agentic AI: CWD Architecture](https://img.shields.io/badge/Agentic%20AI-Coordinator--Worker--Delegator-blue.svg)](#)
+[![Model Context Protocol](https://img.shields.io/badge/MCP-JSON--RPC%202.0%20Stdio-purple.svg)](#)
+[![Apache Spark: 3.5.1](https://img.shields.io/badge/Apache%20Spark-3.5.1%20Structured%20Streaming-orange.svg)](https://spark.apache.org)
+[![Apache Kafka: KRaft](https://img.shields.io/badge/Apache%20Kafka-KRaft%20Mode-black.svg)](https://kafka.apache.org)
+[![InfluxDB: 2.7](https://img.shields.io/badge/InfluxDB-2.7%20Time--Series-indigo.svg)](https://influxdata.com)
+[![Grafana: 11](https://img.shields.io/badge/Grafana-Port%203001%20Live%20Sync-yellow.svg)](https://grafana.com)
+[![Tests: 58/58 Passed](https://img.shields.io/badge/Tests-58%2F58%20Passed%20(0.25s)-success.svg)](#)
 
 ---
 
-## 1. Academic Identity & Course Context
+## 🌟 Executive Overview: Why Agentic AI?
 
-- **Course Title:** Stream Processing and Analytics
-- **Repository:** [https://github.com/abhi-0-7/spa-project.git](https://github.com/abhi-0-7/spa-project.git)
+Traditional smart city architectures rely on **Stream Processing (Kafka & Spark Streaming)** to ingest sensor telemetry and display dashboards on **Grafana**. 
 
-### Academic Focus Disclaimer
-> **IMPORTANT:** The core academic objective of this project is **Stream Processing and Analytics (SPA)**. Smart parking serves as the real-world operational domain used to implement, evaluate, and defend distributed stream-processing concepts: continuous event ingestion, event-time semantics, watermarking, stateful micro-batch transformations, tumbling and sliding window aggregations, late-arriving event mitigation, deduplication under network failures, checkpoint recovery, and time-series telemetry visualization.
+However, **stream processing is purely passive**:
+- When a central parking facility hits **95% capacity**, a streaming dashboard simply turns red.
+- When an ultrasonic IoT sensor breaks and transmits corrupt GPS coordinates (`Lat: 999.0`), bad data enters the time-series database unchecked.
+- **Human operators must constantly monitor screens to manually notice and fix problems.**
+
+**This project introduces the Agentic AI Layer:** an autonomous, closed-loop multi-agent system that sits directly on top of real-time streaming data to **perceive bottlenecks, deliberate across spatial networks, execute concrete actions via tools, and verify real-world outcomes.**
+
+> 📖 **Want a 2-minute plain-English guide?** Read [`WHAT_AGENTS_DO.md`](WHAT_AGENTS_DO.md).  
+> 🚀 **Want beginner step-by-step instructions to run everything?** Read [`HOW_TO_RUN.md`](HOW_TO_RUN.md).
 
 ---
 
-## 2. End-to-End System Architecture
+## 🧠 End-to-End System Architecture
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│               SMART PARKING OCCUPANCY ANALYTICS — PIPELINE ARCHITECTURE                 │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-
- [ SOURCE A: Live API Feed ]           [ SOURCE B: Virtual IoT Simulator ]
- (City Open Data REST API)              (8 Lots, 1,000 Slots, Diurnal Waves)
-  • Live API Key authentication          • Normal (50 ev/s), High Load (500 ev/s)
-  • Real-time bay occupancy              • Fault injection (duplicates, late arrivals)
-           │                                      │
-           └──────────────────┬───────────────────┘
-                              ▼
-            ┌──────────────────────────────────────────┐
-            │        APACHE KAFKA (KRaft Mode)         │
-            │   Broker: localhost:9092, 4 Partitions   │
-            ├──────────────────────────────────────────┤
-            │  • raw-parking-events (Partition by lot) │
-            │  • parking-events-dlq (Schema anomalies) │
-            │  • aggregated-occupancy-stats            │
-            └─────────────────┬────────────────────────┘
-                              │ readStream (Structured Streaming)
-                              ▼
-            ┌──────────────────────────────────────────┐
-            │       APACHE SPARK STREAMING ENGINE      │
-            │               (Master: local[*])         │
-            ├──────────────────────────────────────────┤
-            │ 1. Schema Parser & Timestamp Ingestion   │
-            │ 2. Data Cleansing & DLQ Routing (Filter) │
-            │ 3. Authoritative Event-Time Watermark    │
-            │    └─ withWatermark("event_timestamp",   │
-            │         "2 minutes")                     │
-            │ 4. Stateful Deduplication                │
-            │    └─ dropDuplicates(["event_id"])       │
-            │ 5. Latency Classification:               │
-            │    └─ ON_TIME, SLIGHTLY_LATE, VERY_LATE  │
-            │ 6. Window Aggregations:                  │
-            │    ├─ Tumbling Window (1 min duration)   │
-            │    └─ Sliding Window (5 min, 1 min slide)│
-            │ 7. Stateful Micro-Batch Occupancy Tracker│
-            │    └─ In-memory Slot State FSM & Counters│
-            └─────────────────┬────────────────────────┘
-                              │ foreachBatch & HTTP Line Protocol
-                              ▼
-            ┌──────────────────────────────────────────┐
-            │         INFLUXDB 2.7 TIME-SERIES         │
-            │       Bucket: parking | Org: rvce        │
-            ├──────────────────────────────────────────┤
-            │ Measurements:                            │
-            │  • parking_occupancy                     │
-            │  • parking_occupancy_window              │
-            │  • parking_window_analytics              │
-            │  • parking_processing                    │
-            │  • stream_performance                    │
-            └─────────────────┬────────────────────────┘
-                              │ Flux Query Proxy
-                              ▼
-            ┌──────────────────────────────────────────┐
-            │         GRAFANA 11.5 DASHBOARD           │
-            │            (Port 3001 / 3000)            │
-            ├──────────────────────────────────────────┤
-            │  • Live City Capacity & Available Slots  │
-            │  • Dynamic Occupancy % Gauges            │
-            │  • Bar Charts: Occupancy by Lot & Zone   │
-            │  • Time Series: Entries / Exits per min  │
-            │  • Stream Telemetry: Throughput & Latency│
-            └──────────────────────────────────────────┘
+ ┌────────────────────────────────────────────────────────────────────────────────────────┐
+ │                     SENSORY NERVOUS SYSTEM: REAL-TIME STREAMING                        │
+ │                                                                                        │
+ │  [Virtual IoT Sensors] ──> [Apache Kafka KRaft] ──> [Spark Structured Streaming]       │
+ │  (8 Lots, 1,000 Bays)      Topic: raw-parking-events        • 2-Min Watermarking       │
+ │                            Topic: parking-events-dlq        • 1-Min Tumbling Windows   │
+ │                                                             • Slot State Machine (FSM) │
+ └───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │ Micro-Batch Occupancies & DLQ Alerts
+                                             ▼
+ ┌────────────────────────────────────────────────────────────────────────────────────────┐
+ │                       COGNITIVE BRAIN: MULTI-AGENT AGENTIC AI                          │
+ │                                                                                        │
+ │  1. THREE-TIER COGNITIVE MEMORY                                                        │
+ │     ├── Working Memory (RAM): Ephemeral micro-batch occupancies, velocities, alerts.   │
+ │     ├── Episodic Memory (JSONL): Audit trail of actions & post-action reflection scores│
+ │     └── Knowledge Base (Long-Term): 8-facility spatial road graph & municipal bylaws.  │
+ │                                                                                        │
+ │  2. COORDINATOR - WORKER - DELEGATOR (CWD) ENGINE                                      │
+ │     ┌────────────────────────────────────────────────────────────────────────────┐     │
+ │     │                         COORDINATOR AGENT                                  │     │
+ │     │      (Supervises 60-85% City Equilibrium, Authorizes Tool Executions)      │     │
+ │     └─────────────────────────────────────┬──────────────────────────────────────┘     │
+ │                                           │ Delegates Tasks                            │
+ │     ┌─────────────────────────────────────┴──────────────────────────────────────┐     │
+ │     │                          DELEGATOR AGENT                                   │     │
+ │     │              (Triage streaming events & orchestrates workers)              │     │
+ │     └─────────────┬───────────────────────┬──────────────────────┬───────────────┘     │
+ │                   │                       │                      │                     │
+ │                   ▼                       ▼                      ▼                     │
+ │          ┌─────────────────┐     ┌─────────────────┐    ┌─────────────────┐            │
+ │          │ TRAFFIC WORKER  │     │ALLOCATION WORKER│    │DIAGNOSTIC WORKER│            │
+ │          │ Spatial Reroute │     │Fair Bay Reserve │    │DLQ Self-Healing │            │
+ │          └────────┬────────┘     └────────┬────────┘    └────────┬────────┘            │
+ │                   │                       │                      │                     │
+ │                   └───────────┬───────────┘                      │                     │
+ │                               ▼                                  │                     │
+ │                     [PARETO NEGOTIATION]                         │                     │
+ │                (Optimizes Reroute % without                      │                     │
+ │                 overloading target corridors)                    │                     │
+ │                               │                                  │                     │
+ │                               └─────────────────┬────────────────┘                     │
+ │                                                 │ Approved Execution Plan              │
+ │  3. CONCRETE TOOL EXECUTION                     ▼                                      │
+ │     • dispatch_reroute_guidance()     • allocate_overflow_bays()                       │
+ │     • quarantine_sensor()             • inspect_dlq_anomalies()                        │
+ │                                                                                        │
+ │  4. MODEL CONTEXT PROTOCOL (MCP) SERVER                                                │
+ │     • Standards-compliant JSON-RPC 2.0 stdio interface for external LLM orchestrators. │
+ │                                                                                        │
+ │  5. CLOSED-LOOP INTROSPECTIVE REFLECTION                                               │
+ │     • Evaluates Delta: ΔOccupancy = Pre - Post | ΔVelocity = Pre - Post                │
+ │     • Computes Normalized Score: +1.0 (Success) | 0.0 (Neutral) | -1.0 (Adverse)       │
+ │     • Commits verified learnings to Episodic Memory (`data/episodic_memory.jsonl`).    │
+ └───────────────────────────────────────────┬────────────────────────────────────────────┘
+                                             │ Real-Time Decision Telemetry
+                                             ▼
+ ┌────────────────────────────────────────────────────────────────────────────────────────┐
+ │                      VISUAL DECISION & COMMAND CENTERS                                 │
+ │  • Web Command Center (Port 5000): Split-screen with Live Agent Dialogue Feed          │
+ │  • Grafana Dashboard (Port 3001): 8-corridor live occupancy bar charts & time-series   │
+ └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 3. Core Stream Processing Concepts Implemented
+## 🤖 The 4 Autonomous Agents Explained
 
-| Stream Processing Concept | Implementation in Pipeline | Academic Significance |
-| :--- | :--- | :--- |
-| **Event-Time Processing** | `event_timestamp` parsed directly from IoT payload | Ensures temporal correctness regardless of network latency or Kafka queuing delay. |
-| **Watermark Semantics** | `apply_watermark("event_timestamp", "2 minutes")` | Bounds Spark's state store memory; straggler events arriving past $T_{watermark}$ are cleanly evicted. |
-| **Single-Authoritative Watermark** | Enforced once at ingestion before stateful stages | Completely resolves Spark 3.5's `AnalysisException: Redefining watermark is disallowed`. |
-| **Stateful Deduplication** | `dropDuplicates(["event_id"])` bounded by watermark | Guarantees exactly-once processing semantics over Kafka's at-least-once transport. |
-| **Tumbling Windows** | Fixed 1-minute non-overlapping windows | Computes discrete batch entry/exit velocities and net flow rates without double-counting. |
-| **Sliding Windows** | 5-minute duration with 1-minute slide (overlapping) | Smooths out transient traffic spikes to compute rolling trend analysis. |
-| **Dead Letter Queue (DLQ)** | Malformed records partitioned to `parking-events-dlq` | Fault isolation: corrupt sensor packets do not crash the pipeline or corrupt aggregations. |
-| **Dual-Schema Persistence** | Synchronous line-protocol writes to `parking_occupancy` & `parking_occupancy_window` | Seamless Grafana visualization with automatic fallback across multi-version dashboard templates. |
-| **Stateful Slot Tracking** | `StatefulOccupancyTracker` with slot-level FSM | Computes deterministic lot occupancy percentages and detects duplicate or ghost transmissions. |
-| **Checkpoint Recovery** | Offsets & state committed to `./checkpoints/` | Guarantees zero data loss across ungraceful process termination or system restarts. |
+| Agent | Core Responsibility | Tools Invoked | Real-World Impact |
+| :--- | :--- | :--- | :--- |
+| **Coordinator Agent** | Citywide Equilibrium & Supervisory Authority | `authorize_action()`, `commit_episodic_memory()` | Keeps all 8 facilities within the 60%–85% target window. Prevents rogue actions and logs persistent audit trails. |
+| **Traffic Rebalancing Agent** | Spatial Corridor Routing & Congestion Relief | `get_spatial_neighbors()`, `dispatch_reroute_guidance()` | When MG Road hits 94.7%, identifies Indiranagar (3.8 km away, 70 open bays) and dispatches a 30% detour advisory via digital road signs. |
+| **Capacity Allocation Agent** | Fair Slot Reservation & Anti-Gouging Compliance | `allocate_overflow_bays()`, `verify_statutory_rates()` | Reserves buffer capacity at destination lots so diverted cars have guaranteed spots; enforces standard ₹50/hr rates with zero surge pricing. |
+| **Hardware Diagnostic Agent** | Self-Healing IoT & Kafka DLQ Triage | `inspect_dlq_anomalies()`, `quarantine_sensor()` | Detects corrupt sensor telemetry (e.g. `Lat: 999.0`), isolates bad hardware from the stream pipeline, and logs BBMP maintenance work orders. |
 
 ---
 
-## 4. Hardware and System Constraints
+## ⚡ The 4 Cognitive Pillars of Agentic AI
 
-The entire architecture is engineered to run seamlessly on a **single laptop** without requiring physical external hardware:
+### 1. Three-Tier Memory Hierarchy
+- **Short-Term Working Memory (RAM):** Retains real-time 1-minute streaming aggregations, occupancy percentages, and active alerts.
+- **Episodic Memory (`data/episodic_memory.jsonl`):** A persistent JSON Lines record storing every past event, the agents involved, the tools executed, and the post-intervention reflection score.
+- **Long-Term Knowledge Base:** Spatial road graph of Bengaluru (inter-lot distances, transit times, corridor connections) and municipal statutory bylaws.
 
-- **Host Processor:** Intel Core i7-12700H (14 cores / 20 threads)
-- **RAM Budget:** 16 GB DDR4 (Pipeline consumes ~3.0 GB total container + JVM heap)
-- **Execution Mode:** Multi-threaded local CPU (`master("local[*]")` with 4 shuffle partitions)
-- **OS Support:** Windows 10/11 (PowerShell), Linux, macOS
+### 2. Multi-Agent Negotiation (Pareto Optimality)
+Autonomous agents rarely have identical objectives:
+- The **Traffic Worker** seeks to clear congestion immediately by diverting large volumes of vehicles.
+- The **Capacity Allocation Worker** protects neighboring residential and commercial lots from sudden overflow.
+- The **Agent Negotiator** mediates mathematically between them to find a Pareto-optimal equilibrium (e.g., capping the diversion to 30% to maintain equilibrium across both corridors).
+
+### 3. Concrete Tool Execution (Function Calling)
+Unlike conversational chatbots that only output text, these agents have **autonomous hands**:
+- `dispatch_reroute_guidance(source, target, divert_percentage)`: Updates Variable Message Signs (VMS) on city expressways.
+- `quarantine_sensor(lot_id, slot_id, fault_type)`: Flags faulty hardware in the state machine and prevents database contamination.
+- `allocate_overflow_bays(lot_id, bay_count)`: Dynamically locks reserve slots for inbound redirected traffic.
+
+### 4. Closed-Loop Reflection & Introspective Learning
+Traditional automation executes and forgets. This agentic system features **introspective closed-loop evaluation**:
+1. When an action is taken, pre-intervention metrics ($O_{pre}, V_{pre}$) are checkpointed.
+2. After 3 minutes, the subsequent streaming micro-batch is evaluated ($O_{post}, V_{post}$).
+3. The system computes a normalized reflection score:
+   $$\text{Score} = \min\left(1.0, \frac{O_{pre} - O_{post}}{10.0}\right)$$
+4. A score of **`+1.0 (SUCCESS)`** validates that occupancy dropped (e.g., from 94.7% to 81.3%), committing the validated strategy to Episodic Memory.
 
 ---
 
-## 5. Step-by-Step Execution Guide
+## 💻 Visual Interfaces
+
+### 1. Autonomous Web Command Center (`http://localhost:5000`)
+- **Split-Screen Design:** Left side displays live occupancies across 8 Bengaluru parking corridors; right side displays the **Live Multi-Agent Thought Stream**.
+- **Interactive Action Triggers:**
+  - `Simulate Rush Hour Jam (MG Road 95%)`: Triggers gridlock; watch agents coordinate and reroute traffic.
+  - `Simulate Sensor Hardware Failure`: Injects corrupt GPS telemetry; watch the Diagnostic Worker isolate the sensor and log a repair ticket.
+  - `Run Reflection Loop (+1.0)`: Evaluates post-intervention metrics and records the episode.
+  - `Reset Equilibrium`: Restores city lots to standard baseline flow.
+
+### 2. Live Grafana Telemetry Dashboard (`http://localhost:3001`)
+- **Real-Time Synchronization:** Line-protocol writes to InfluxDB update Grafana instantly.
+- **Key Panels:**
+  - *Occupancy by Parking Lot:* Bar chart tracking all 8 facilities.
+  - *Occupancy by Geographical Zone:* Central, East, North, and South corridors.
+  - *Entries / Exits per Minute:* 1-minute tumbling window velocities.
+  - *Throughput & Pipeline Latency:* Real-time streaming performance metrics.
+
+---
+
+## 🛠️ Quickstart: Run in 3 Steps
 
 ### Prerequisites
-- Python 3.10+ installed and added to `PATH`.
-- Docker Desktop running.
-- Java JDK 8 installed (`JAVA_HOME` configured).
+- Python 3.10+
+- Docker Desktop running
 
----
-
-### Step 1: Start Infrastructure Containers
-
-From the project root:
+### Step 1: Start Docker Containers
 ```powershell
 docker compose up -d
 ```
-Verify that all containers are active:
-- **Apache Kafka:** `localhost:9092`
-- **InfluxDB 2.7:** `http://localhost:8086`
-- **Grafana:** `http://localhost:3001` (or `http://localhost:3000`)
+*(Starts Kafka KRaft on port 9092, InfluxDB on port 8086, and Grafana on port 3001).*
 
----
-
-### Step 2: Reset Checkpoints & Stale State
-
-To ensure a clean starting state without offset conflicts:
+### Step 2: Start the Web Command Center
 ```powershell
-cd C:\Users\Abhishek\Downloads\spa\smart-parking-analytics
-python scripts/reset.py --force
+python -m web.app
 ```
+Open **`http://localhost:5000`** in your browser.
 
----
-
-### Step 3: Launch Spark Structured Streaming Engine (Terminal 1)
-
-In your first PowerShell terminal, run:
+### Step 3: Run the Autonomous Demo or Test Suite
 ```powershell
-cd C:\Users\Abhishek\Downloads\spa\smart-parking-analytics
-python -m streaming.main --watermark "2 minutes" --trigger "5 seconds"
-```
-> **Output:** Spark connects to Kafka topic `raw-parking-events`, applies watermarking, starts tumbling/sliding window aggregations, and begins printing micro-batch execution summaries:
-> ```text
-> [INFO] streaming.main - Stateful occupancy & window queries active and writing to InfluxDB.
-> [INFO] streaming.main - Batch 0: Processed X events in 0.42s (115.2 ev/s)
-> ```
+# Run the terminal multi-agent demonstration
+python -m agents.orchestrator --demo
 
----
-
-### Step 4: Launch Real-Time Event Ingestion (Terminal 2)
-
-Choose either the **Live External API** or the **Virtual IoT Simulator**:
-
-#### Option A: Live External REST API (Demonstrates Live API Key Integration)
-```powershell
-cd C:\Users\Abhishek\Downloads\spa\smart-parking-analytics
-python -m ingestion.live_api_producer --interval 3 --api-key "DEMO_KEY_RVCE_AI372IA"
-```
-*Features authenticated polling against live smart parking municipal open data APIs with automatic fallback to live sensor streams.*
-
-#### Option B: Virtual IoT Sensor Network Simulator
-```powershell
-cd C:\Users\Abhishek\Downloads\spa\smart-parking-analytics
-# Normal steady traffic (50 events/sec)
-python -m simulator.main --mode normal --rate 50
-
-# High-load stress test (500 events/sec)
-python -m simulator.main --mode high_load --rate 500
-
-# Peak-hour traffic pattern (morning & evening rush hour waves)
-python -m simulator.main --mode peak_hour
-
-# Fault-injection mode (injects duplicate events, late events, and corrupt coordinates)
-python -m simulator.main --mode failure --rate 30
-```
-
----
-
-### Step 5: View Real-Time Telemetry in Grafana
-
-Open your web browser and navigate to:
-**[http://localhost:3001](http://localhost:3001)** *(or `http://localhost:3000`)*
-
-- **Username:** `admin`
-- **Password:** `admin` *(or `parking123`)*
-- **Dashboard:** **Dashboards** $\rightarrow$ **Smart Parking Occupancy Analytics — Bengaluru**
-- **Refresh Interval:** Select **5s** in the top-right corner.
-- **Time Range:** Select **Last 15 minutes** or **Last 1 hour**.
-
-#### Dashboard Highlights:
-1. **Capacity & Availability KPIs:** Real-time gauges for Total Capacity (1,000), Occupied Slots, Available Slots, and Overall Occupancy %.
-2. **Geographical Dynamics:** Bar charts showing occupancy by lot (MG Road, Koramangala, Indiranagar, Whitefield, Hebbal, Jayanagar, Electronic City, Yelahanka).
-3. **Windowed Velocities:** Continuous timeseries plotting Entries vs. Exits per minute computed via 1-minute tumbling windows.
-4. **Stream Telemetry:** Live monitoring of Spark micro-batch processing duration, throughput (events/sec), and pipeline latency.
-
----
-
-## 6. Verification and Automated Test Suite
-
-The system includes a 43-test suite covering unit components, schema validators, state transitions, window algorithms, and pipeline integrations:
-
-```powershell
-cd C:\Users\Abhishek\Downloads\spa\smart-parking-analytics
+# Run the complete test suite (58/58 tests pass in ~0.25s)
 python tests/run_all_tests.py
 ```
 
-### Test Suite Output:
+---
+
+## 📁 Repository Structure
+
+```text
+agentic-ai/
+├── agents/                          # Cognitive Multi-Agent Subsystem
+│   ├── cwd/                         # Coordinator, Delegator, Workers, Negotiator
+│   │   ├── coordinator.py           # Supervisory authority & legal governance
+│   │   ├── delegator.py             # Event triage & worker assignment
+│   │   ├── negotiator.py            # Pareto-optimal inter-agent negotiation
+│   │   └── workers.py               # Traffic, Capacity Allocation & Diagnostic agents
+│   ├── memory/                      # Three-Tier Memory Hierarchy
+│   │   ├── working.py               # Ephemeral RAM state
+│   │   ├── episodic.py              # Persistent JSONL journal & reflection history
+│   │   └── knowledge_base.py        # Spatial graph & municipal statutory bylaws
+│   ├── tools/                       # Typed Tool Registry & Function Schemas
+│   │   ├── registry.py              # Tool execution engine
+│   │   └── definitions.py           # Reroute, quarantine, and allocation tools
+│   ├── reflection/                  # Closed-Loop Introspective Evaluation Engine
+│   │   └── introspector.py          # Delta calculation & reflection scoring (+1.0)
+│   ├── mcp/                         # Model Context Protocol (MCP) Server
+│   │   └── server.py                # JSON-RPC 2.0 stdio server for LLM tools
+│   └── orchestrator.py              # Cognitive master loop & demo CLI
+│
+├── web/                             # Web Command Center
+│   ├── app.py                       # Flask server with instant InfluxDB dual-sync
+│   └── templates/index.html         # Responsive split-screen command center
+│
+├── streaming/                       # Spark Structured Streaming Core Engine
+│   ├── main.py                      # Pipeline bootstrap & execution graph
+│   ├── event_time.py                # Authoritative 2-minute watermarking
+│   ├── windowing.py                 # 1-min tumbling & 5-min sliding aggregations
+│   ├── deduplication.py             # Watermarked stateful deduplication
+│   └── stateful_tracker.py          # Slot-level Finite State Machine (FSM)
+│
+├── simulator/                       # Virtual IoT Sensor Network Simulator
+│   ├── main.py                      # Normal (50 ev/s), High-Load (500 ev/s), Failure
+│   ├── generator.py                 # Probabilistic slot event generator
+│   └── parking_lot.py               # 8 Bengaluru facility models
+│
+├── storage/                         # Time-Series Persistence
+│   ├── influx_client.py             # HTTP REST Line Protocol client
+│   └── schema.py                    # Point definitions & measurements
+│
+├── tests/                           # 58 Automated Tests
+│   ├── run_all_tests.py             # Master test runner (unit, integration, agents)
+│   └── unit/test_agents.py          # Complete tests for CWD, memory, tools, & reflection
+│
+├── WHAT_AGENTS_DO.md                # Plain-English guide to the Agentic AI layer
+├── HOW_TO_RUN.md                    # Step-by-step beginner run guide
+└── docker-compose.yml               # Kafka, InfluxDB, and Grafana containers
+```
+
+---
+
+## 🧪 Verification & Test Coverage
+
+Run the automated test suite anytime:
+```powershell
+python tests/run_all_tests.py
+```
+
 ```text
 =================================================================
-      SMART PARKING OCCUPANCY ANALYTICS -- TEST SUITE
-      Course: AI372IA -- RV College of Engineering
+      SMART PARKING COGNITIVE NETWORK -- TEST SUITE
 =================================================================
-Tests Run:       43
+Tests Run:       58
 Errors:          0
 Failures:        0
 Skipped:         2 (offline broker mocks)
-Execution Time:  0.28 seconds
+Execution Time:  0.25 seconds
 =================================================================
 [SUCCESS] ALL TESTS PASSED!
 ```
-
----
-
-## 7. Viva & Academic Defense Q&A
-
-### Q1: Why use Event Time instead of Processing Time?
-**Answer:** Network congestion, wireless IoT packet retries, and Kafka buffering create variable transit delays. If processing time were used, late-arriving events would be assigned to the wrong temporal window, skewing entry/exit velocities and peak-hour statistics. Using `event_timestamp` guarantees deterministic, reproducible window aggregates.
-
-### Q2: What is the purpose of the 2-Minute Watermark?
-**Answer:** In stateful stream processing, Spark maintains in-memory state for windows and deduplication. Without a watermark, Spark would retain state indefinitely in anticipation of infinitely late events, eventually triggering an Out-Of-Memory (OOM) crash. The 2-minute watermark instructs the execution engine to wait up to 120 seconds beyond the maximum observed event time before closing the window and evicting state.
-
-### Q3: How was Spark 3.5's Watermark Redefinition Bug resolved?
-**Answer:** In Apache Spark 3.5+, calling `.withWatermark()` more than once on the same column in an execution graph throws `AnalysisException: Redefining watermark is disallowed`. The architecture was refactored to apply a **single authoritative watermark** on `valid_stream` immediately after ingestion. Downstream stages (`dropDuplicates` and window operators) reuse this existing watermark without re-declaring it.
-
-### Q4: How does the system handle corrupt sensor payloads?
-**Answer:** Schema enforcement validates records against required fields (`event_id`, `lot_id`, `slot_id`, status `OCCUPIED`/`FREE`, valid lat/lon, parseable ISO timestamps). Valid records enter the analytical pipeline; invalid or malformed records are diverted into Kafka topic `parking-events-dlq` (Dead Letter Queue) for isolation and audit.
-
----
-
-## 8. Repository Layout
-
-```text
-smart-parking-analytics/
-├── .env.example                     # Environment template (Kafka, Influx, Spark)
-├── docker-compose.yml               # Container orchestration (Kafka KRaft, InfluxDB, Grafana)
-├── requirements.txt                 # Python dependencies
-├── README.md                        # Primary academic documentation
-├── DECISIONS.md                     # Architecture decision records (ADRs)
-├── PROJECT_STATUS.md                # Phase completion tracking
-│
-├── config/                          # YAML configuration modules
-│   ├── analytics.yaml               # InfluxDB and Grafana telemetry configuration
-│   ├── kafka.yaml                   # Topic definitions, partition count, retention
-│   ├── simulator.yaml               # Diurnal wave coefficients, lot capacities
-│   └── spark.yaml                   # Shuffle partitions, trigger timing, watermarks
-│
-├── dashboards/                      # Grafana dashboards & datasources
-│   └── grafana/
-│       ├── dashboards/
-│       │   └── smart_parking_overview.json
-│       └── provisioning/
-│           ├── dashboards/dashboard_config.yaml
-│           └── datasources/influxdb.yaml
-│
-├── ingestion/                       # External ingestion & live producer
-│   ├── live_api_producer.py         # Authenticated REST API producer with live fallback
-│   ├── producer.py                  # Kafka Python producer client
-│   └── validator.py                 # Ingestion schema validator
-│
-├── monitoring/                      # Health checks & benchmarks
-│   ├── benchmark.py                 # Multi-rate load testing
-│   └── health_check.py              # End-to-end service status probe
-│
-├── simulator/                       # Virtual IoT Sensor Simulator
-│   ├── main.py                      # CLI entry point (normal, high_load, failure)
-│   ├── generator.py                 # Slot-level transition generator
-│   └── parking_lot.py               # 8 Bengaluru parking lot models
-│
-├── storage/                         # Time-series persistence
-│   ├── influx_client.py             # Dual-schema line protocol REST client
-│   ├── schema.py                    # Measurement schemas & Flux queries
-│   └── setup.py                     # InfluxDB bucket initializer
-│
-├── streaming/                       # Spark Structured Streaming core engine
-│   ├── main.py                      # Bootstrap, checkpointing, and execution graph
-│   ├── consumer.py                  # Kafka stream source configuration
-│   ├── deduplication.py             # Watermarked dropDuplicates
-│   ├── event_time.py                # Watermark applicator & latency classifier
-│   ├── stateful_tracker.py          # Micro-batch lot occupancy FSM
-│   └── windowing.py                 # Tumbling & sliding window aggregators
-│
-└── tests/                           # 43 automated unit & integration tests
-    ├── conftest.py
-    ├── run_all_tests.py             # Master test suite runner
-    ├── unit/
-    ├── integration/
-    └── performance/
-```
-
----
+The test suite validates:
+- CWD multi-agent role assignment, delegation, and Pareto negotiation.
+- Three-tier memory persistence and episodic retrieval.
+- Tool registry function calling and statutory parameter bounds.
+- Closed-loop reflection delta calculations and scoring.
+- Spark 2-minute watermarking, tumbling windows, and slot state transitions.

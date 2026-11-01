@@ -1,0 +1,101 @@
+# ===================================================================
+# config/agents.yaml
+# Smart Parking Agentic AI Configuration
+# Course: AI373TA - Agentic Artificial Intelligence (Semester VII)
+# RV College of Engineering, Bengaluru
+# ===================================================================
+
+agents:
+  enabled: true
+  system_name: "Bengaluru Smart Mobility Cognitive Agentic Network (SMCAN)"
+  mode: "hybrid"  # "heuristic" (deterministic offline) | "llm" (Gemini/OpenAI) | "hybrid"
+  tick_interval_seconds: 5.0
+
+  # Global Coordinator Objective
+  coordinator:
+    name: "CityMobilityCoordinator"
+    objective: "Maintain city-wide parking equilibrium (60-85% occupancy), zero safety gridlocks, and resilient sensor health."
+    target_occupancy_min: 60.0
+    target_occupancy_max: 85.0
+    critical_occupancy_threshold: 92.0
+    auto_approve_non_conflicting: true
+
+  # Delegator Routing & Threshold Rules
+  delegator:
+    name: "StreamTelemetryDelegator"
+    triggers:
+      congestion_high:
+        occupancy_threshold: 85.0
+        velocity_threshold_per_min: 8.0
+        assigned_worker: "TrafficWorker"
+      congestion_critical:
+        occupancy_threshold: 92.0
+        assigned_worker: "NegotiatedConsensus"  # Requires Traffic + Pricing joint resolution
+      surge_demand:
+        occupancy_threshold: 80.0
+        projected_rush_hour: true
+        assigned_worker: "PricingWorker"
+      sensor_fault:
+        dlq_anomaly_threshold: 2
+        assigned_worker: "DiagnosticWorker"
+
+  # Worker Configurations
+  workers:
+    traffic:
+      name: "TrafficRebalancingWorker"
+      role: "Spatial traffic rerouting and corridor congestion relief"
+      max_divert_percentage: 35.0
+      max_search_radius_km: 4.0
+      vms_signage_enabled: true
+    
+    pricing:
+      name: "DynamicPricingWorker"
+      role: "Micro-economic demand throttling and revenue-optimal surge management"
+      base_hourly_rate_inr: 50.0
+      min_surge_multiplier: 1.0
+      max_surge_multiplier: 2.5
+      step_size: 0.15
+      regulatory_price_cap_inr: 150.0
+
+    diagnostic:
+      name: "SensorDiagnosticWorker"
+      role: "Automated DLQ triage, sensor fault isolation, and maintenance ticketing"
+      anomaly_threshold_for_quarantine: 3
+      quarantine_duration_minutes: 60
+      auto_ticket_generation: true
+
+  # Negotiation and Conflict Resolution
+  negotiation:
+    enabled: true
+    strategy: "pareto_optimal"  # "pareto_optimal" | "priority_traffic" | "compromise_split"
+    max_rounds: 3
+    arbitrator: "Coordinator"
+
+  # Memory Hierarchy (Unit IV)
+  memory:
+    short_term:
+      max_events_buffer: 200
+      working_context_ttl_seconds: 600
+    episodic:
+      persistence_path: "data/episodic_memory.jsonl"
+      auto_flush: true
+      max_episodes_retained: 1000
+    knowledge_base:
+      city: "Bengaluru"
+      regulatory_body: "BBMP (Bruhat Bengaluru Mahanagara Palike)"
+      parking_policy: "Bengaluru Smart Parking Policy 2021"
+
+  # Reflection & Introspection (CO2, Unit II)
+  reflection:
+    enabled: true
+    verification_delay_seconds: 15.0  # Stream time before evaluating intervention impact
+    success_occupancy_reduction_pct: 4.0
+    deceleration_entry_velocity_threshold: 3.0
+    learning_rate: 0.1
+
+  # Model Context Protocol (MCP) Server (Unit V)
+  mcp:
+    server_name: "bengaluru-parking-mcp"
+    version: "1.0.0"
+    transport: "stdio"  # "stdio" | "sse"
+    port: 8000

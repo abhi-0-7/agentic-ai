@@ -46,6 +46,7 @@ from streaming.preprocessing import add_processing_metadata, flatten_event, pars
 from streaming.sink import write_to_console, write_to_dlq, write_to_influxdb, write_to_kafka
 from streaming.state_manager import StatefulOccupancyTracker
 from streaming.windowing import create_all_window_aggregations
+from agents.orchestrator import ParkingAgentOrchestrator
 
 # Setup logging
 logging.basicConfig(
@@ -224,6 +225,7 @@ def main() -> None:
     # 7. Stateful Occupancy Tracker
     state_tracker = StatefulOccupancyTracker(capacity_lookup=lot_capacities)
     influx_client = create_client_from_env()
+    agent_orchestrator = ParkingAgentOrchestrator(influx_client=influx_client)
 
     # Define queries list
     active_queries = []
@@ -314,6 +316,17 @@ def main() -> None:
                                    "maximum_occupancy", "average_occupancy"],
                     time_column="timestamp",
                 )
+
+                # 3. Agentic AI Cognitive Layer Ingestion & Reflection (AI373TA)
+                for _, row in state_pdf.iterrows():
+                    agent_orchestrator.ingest_lot_telemetry(
+                        lot_id=str(row["lot_id"]),
+                        occupied_slots=int(row["occupied_slots"]),
+                        capacity=int(row["capacity"]),
+                        entry_velocity_per_min=float(row.get("batch_entries", 0)),
+                        exit_velocity_per_min=float(row.get("batch_exits", 0)),
+                    )
+                agent_orchestrator.trigger_reflection_cycle()
 
             # Write stream performance telemetry
             duration_s = max(0.001, time.perf_counter() - t0)

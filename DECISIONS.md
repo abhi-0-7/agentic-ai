@@ -68,3 +68,23 @@
 ## D-016: Windows Console CP1252 Character Encoding Resiliency
 **Decision:** Standardize all terminal CLI outputs to pure ASCII indicators (`[OK]`, `[INFO]`, `[ERROR]`).  
 **Reason:** Prevents `UnicodeEncodeError` crashes on default Windows PowerShell environments using the CP1252 code page.
+
+## D-017: Coordinator-Worker-Delegator (CWD) Multi-Agent Architecture
+**Decision:** Implement the CWD pattern with specialized Worker agents (Traffic, Pricing, Diagnostics), an automated Delegator, and a supervisory Coordinator.  
+**Reason:** Mandated by Unit III and IV of the AI373TA syllabus. Establishes clean separation of concerns: task decomposition is decoupled from execution and global system governance.
+
+## D-018: Three-Tier Agent Memory Architecture
+**Decision:** Implement volatile Short-Term Working Memory (`WorkingMemory`), persistent JSONL Episodic Memory (`EpisodicMemory`), and static domain Knowledge Base (`ParkingKnowledgeBase`).  
+**Reason:** Fulfills Unit IV memory requirements. Working memory enables instant reactive decisions, episodic memory powers retrospective reflection, and the knowledge base guarantees strict compliance with BBMP municipal bylaws.
+
+## D-019: Pareto-Optimal Inter-Agent Conflict Resolution
+**Decision:** Implement formal negotiation (`AgentNegotiator`) to mediate between competing TrafficWorker and PricingWorker objectives.  
+**Reason:** Solves real-world multi-agent coordination deadlocks: balances traffic diversion with moderated surge pricing and destination off-peak discounts, ensuring commuters adhere to rerouting advisories.
+
+## D-020: Model Context Protocol (MCP) Standards Compliance
+**Decision:** Implement a JSON-RPC 2.0 MCP Server (`ParkingMCPServer`) exposing parking state as Resources, management actions as Tools, and workflows as Prompts.  
+**Reason:** Fulfills Unit V of the syllabus. Provides open interoperability, allowing any LLM client (Claude Desktop, Antigravity, custom agents) to autonomously interact with the parking network.
+
+## D-021: Closed-Loop Reflection via Stream Introspection
+**Decision:** Implement an automated introspective evaluation engine (`Introspector`) that quantifies the impact of agent interventions on subsequent stream micro-batches.  
+**Reason:** Fulfills Course Outcome CO2. Binds the Agentic AI and Stream Processing layers into a true cyber-physical closed loop, empirically validating decision efficacy.
