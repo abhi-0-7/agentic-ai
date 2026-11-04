@@ -1,16 +1,30 @@
 apiVersion: 1
 
 datasources:
+  - name: InfluxDB
+    type: influxdb
+    access: proxy
+    url: http://influxdb:8086
+    jsonData:
+      version: Flux
+      organization: rv-college
+      defaultBucket: parking_analytics
+      tlsSkipVerify: true
+    secureJsonData:
+      token: parking-super-secret-token
+    isDefault: true
+    editable: true
+
   - name: InfluxDB-Parking
     type: influxdb
     access: proxy
     url: http://influxdb:8086
     jsonData:
       version: Flux
-      organization: rvce
+      organization: rv-college
       defaultBucket: parking_analytics
       tlsSkipVerify: true
     secureJsonData:
-      token: local-parking-token
-    isDefault: true
+      token: parking-super-secret-token
+    isDefault: false
     editable: true
